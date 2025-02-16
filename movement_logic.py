@@ -1,6 +1,7 @@
 __author__ = 'github.com/wardsimon'
 __version__ = '0.0.1'
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -34,30 +35,14 @@ class LeaderLogic(MovementLogic):
 
     def run(self, t, dt, monsters, players, pickups) -> Vector | Towards | None:
         super().run(t, dt, monsters, players, pickups)
-        self.tick -=1
-        if self.tick > 0:
-            return Vector(self.position.x, self.position.y)
-        self.tick = self.initial_tick
         if t > self.next_turn:
-            if pickups:
-                chickens = []
-                treasure = []
-                chicken_object = pickups.get('chicken', None)
-                if chicken_object:
-                    for x, y in zip(chicken_object.x, chicken_object.y):
-                        chickens.append(Vector(x, y))
-                treasure_object = pickups.get('treasure', None)
-                if treasure_object:
-                    for x, y in zip(treasure_object.x, treasure_object.y):
-                        treasure.append(Vector(x, y))
-                distance_fn = lambda item:  ((item.x - self.position.x)**2 + (item.y - self.position.y)**2)**0.5
-                chickens.sort(key=distance_fn)
-                treasure.sort(key=distance_fn)
-                if len(treasure) > 0:
-                    return Towards(treasure[0].x, treasure[0].y)
-                if len(chickens) > 0:
-                    return Towards(chickens[0].x, chickens[0].y)
-            self.next_turn += 5.0
+            pot = Potential(pickup_poles(pickups), monster_poles(monsters))
+            v = pot.direction(Vec(self.position.x, self.position.y))
+            if v == Vector(0, 0):
+                self.next_turn += 3
+            else:
+                self.vector  = v
+                self.next_turn += 0.5
         return self.vector
 
 
@@ -80,3 +65,80 @@ class FollowerLogic(MovementLogic):
             x_offset = radius * np.cos(angle)
             y_offset = radius * np.sin(angle)
             return Towards(leader.x + x_offset, leader.y + y_offset)
+
+
+@dataclass
+class Vec:
+    x: float
+    y: float
+
+    def length(self):
+        return np.sqrt(self.x * self.x + self.y * self.y)
+
+    def __add__(self, o):
+        return Vec(self.x + o.x, self.y + o.y)
+
+    def __radd__(self, o):
+        if not isinstance(o, Vec):
+            return Vec(o + self.x, o + self.y)  # needed for sum()
+        return Vec(self.x + o.x, self.y + o.y)
+
+    def __sub__(self, o):
+        return Vec(self.x - o.x, self.y - o.y)
+
+    def __mul__(self, scalar: float):
+        return Vec(self.x * scalar, self.y * scalar)
+
+    def __rmul__(self, scalar: float):
+        return Vec(scalar * self.x, scalar * self.y)
+
+
+@dataclass
+class Pole:
+    pos: Vec
+    strength: float
+    sigma: float
+    scale: float = 1.0
+
+    def __post_init__(self):
+        self.scale = 1.0 / self.sigma / self.sigma
+
+    def direction(self, pos: Vec):
+        v = self.pos - pos
+        r = v.length()
+        magnitude = self.strength * np.exp(-r * r * self.scale)
+        return (magnitude / r) * v
+
+
+@dataclass
+class Potential:
+    attract: tuple[Pole, ...]  # TODO it would be great if this was a PriorityQueue
+    repulse: tuple[Pole, ...]  # TODO PriorityQueue this up too
+
+    def direction(self, pos: Vec) -> Vector:
+        """Select a direction from (x,y) that avoids repulsive poles"""
+        # To start, just go for the first-known attractor
+        goal = self.attract[0].direction(pos) if len(self.attract) else Vec(0, 0)
+        # but try to avoid all known repulsive poles
+        avoid = sum(rep.direction(pos) for rep in self.repulse) if len(self.repulse) else Vec(0, 0)
+        print(f'{len(self.attract)=} {goal=} {len(self.repulse)=} {avoid=}')
+        total = goal - avoid
+        return Vector(total.x, total.y)
+
+
+def obj_poles(groups: dict, known: dict):
+    tot = []
+    for t, (s, r) in known.items():
+        if t in groups:
+            tot.extend([Pole(Vec(x, y), s, r) for x, y in zip(groups[t].x, groups[t].y)])
+    return tuple(tot)
+
+
+def monster_poles(monsters):
+    known = {'bat': (1, 50)}
+    return obj_poles(monsters, known)
+
+
+def pickup_poles(pickups):
+    known = {'chicken': (10, 100), 'box': (100, 130)}
+    return obj_poles(pickups, known)
