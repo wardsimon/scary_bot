@@ -26,6 +26,7 @@ class MovementLogic:
         player = self.get_self(players)
         self.position = Vector(player.x, player.y)
 
+
 class LeaderLogic(MovementLogic):
     def __init__(self, player: 'BasePlayer'):
         super().__init__(player)
@@ -58,6 +59,7 @@ class FollowerLogic(MovementLogic):
         return None
 
     def run(self, t, dt, monsters, players, pickups) -> Vector | Towards | None:
+        super().run(t, dt, monsters, players, pickups)
         leader = self.get_leader(players)
         if leader:
             angle = (t % 360) * (3.14159 / 180)  # Convert time to radians

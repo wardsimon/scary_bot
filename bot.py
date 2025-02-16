@@ -2,15 +2,10 @@
 
 import numpy as np
 
-from scary_bot.movement_logic import Vec, Potential, monster_poles, pickup_poles
-from tilthenightends import Vector, Towards
-
 from scary_bot.players import Player
 from tilthenightends import Levelup, LevelupOptions, Team
 
 RNG = np.random.default_rng(seed=12)
-
-
 
 class Brain:
     def __init__(self):
