@@ -1,3 +1,3 @@
 # Survivor bot
 
-Template bot for the TilTheNightEnds game
+Template bot for the TilTheNightEnds game, by Simon & Greg
