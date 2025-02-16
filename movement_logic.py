@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from tilthenightends.player import PlayerInfo
+
 if TYPE_CHECKING:
     from scary_bot.players import Player
 from tilthenightends import Vector, Towards
@@ -166,23 +168,33 @@ def obj_poles(groups: dict, known: dict):
 
 
 def pickup_poles(pickups):
-    #TODO go toward chicken if we need health
     known = {'chicken': (10, 100), 'treasure': (100, 130)}
     return obj_poles(pickups, known)
 
 def healer_poles(t, players):
-    # TODO go toward healer's water
     if 'isolde' not in players:
         return ()
     water = players['isolde'].weapon.projectiles
-    xs, ys = water['positions']
+    pos = water['positions']  # Always N by 2?
+    if not len(pos):
+        # No water to go towards
+        return ()
+    xs, ys = pos[:, 0], pos[:, 1]
     ss = (water['tends'] - t) * water['healths']
     rs = water['radii']
     return tuple(Pole(Vec(x, y), s, r) for x, y, s, r in zip(xs, ys, ss, rs))
 
 
+def health_need(players: dict[str, PlayerInfo]):
+    for name, player in players.items():
+        if player.health and player.health < player.max_health:
+            return 1
+    return 0
+
+
 def toward_poles(t, players, pickups):
-    known = {'chicken': (10, 100), 'treasure': (100, 130)}
+    health_scale = health_need(players)
+    known = {'chicken': (10 * health_scale, 100), 'treasure': (100, 130)}
     pickup_poles = obj_poles(pickups, known)
-    player_poles = healer_poles(t, players)
+    player_poles = healer_poles(t, players) if health_scale else ()
     return player_poles + pickup_poles
