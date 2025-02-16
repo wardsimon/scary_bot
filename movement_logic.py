@@ -51,6 +51,7 @@ class FollowerLogic(MovementLogic):
     def __init__(self, player: 'Player', leader: str):
         super().__init__(player)
         self.leader = leader
+        self._first_leader = leader
 
     def get_leader(self, players):
         for name, player in players.items():
@@ -71,6 +72,9 @@ class FollowerLogic(MovementLogic):
         self.player.is_leader = True
         self.player.brain.leader.is_leader = False
         self.player.brain.followers[self.player.brain.leader.hero] = self.player.brain.leader
+        self.player.brain.followers.pop(self.player.hero)
+        for value in self.player.brain.followers:
+            value.follower.leader = self.player.hero
         self.player.brain.leader = self.player
         return self.run(t, dt, monsters, players, pickups)
 
