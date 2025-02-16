@@ -1,16 +1,34 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from dataclasses import dataclass
 import numpy as np
+from dataclasses import dataclass
 from scary_bot.players import Player
 from tilthenightends import Levelup, LevelupOptions, Team
-
 RNG = np.random.default_rng(seed=12)
+
+
+heroes = {
+    "isolde": ['player_health', 'weapon_cooldown', 'weapon_damage', 'weapon_size'],
+    "evelyn": ['player_health', 'weapon_cooldown', 'weapon_speed', 'weapon_damage', 'weapon_size'],
+    "theron": ['player_health', 'weapon_cooldown', 'weapon_damage', 'weapon_size'],
+    "selene": ['player_health', 'weapon_cooldown', 'weapon_damage', 'weapon_size'],
+    "seraphina": ['player_health', 'weapon_cooldown', 'weapon_damage', 'weapon_size'],
+}
+heroes_list = list(heroes.keys())
+heroes_inverted = {
+    "player_health": ["isolde", "evelyn", "theron", "selene", "seraphina"],
+    "weapon_speed": ["evelyn"],
+    "weapon_cooldown": ["isolde", "evelyn", "theron", "selene", "seraphina"],
+    "weapon_damage": ["isolde", "theron", "selene", "seraphina"],
+    "weapon_size": ["isolde", "evelyn", "theron", "selene", "seraphina"],
+}
+heroes_flat = [(hero, attr) for hero, attrs in heroes_inverted.items() for attr in attrs]
 
 class Brain:
     def __init__(self):
         self.followers = {}
         self.leader = None
+        self.levelup_index = 0
 
     def create_hero(self, hero: str, following: str, is_primary_hero: bool = False) -> Player:
         player = Player(brain, hero, following)
@@ -23,17 +41,12 @@ class Brain:
 
     def levelup(self, t: float, info: dict, players: dict) -> Levelup:
         # A very random choice
-        hero = RNG.choice(list(players.keys()))
-        what = RNG.choice(list(LevelupOptions))
-        return Levelup(hero, what)
+        what, hero = heroes_flat[self.levelup_index % len(heroes_flat)]
+        self.levelup_index += 1
+        return Levelup(hero, LevelupOptions[what])
 
 brain = Brain()
-players = []
-players.append(brain.create_hero("isolde", None, is_primary_hero=True))
-players.append(brain.create_hero("theron", "isolde"))
-players.append(brain.create_hero("evelyn", "isolde"))
-players.append(brain.create_hero("selene", "isolde"))
-players.append(brain.create_hero("seraphina", "isolde"))
+players = [brain.create_hero(heroes_list[0], None, is_primary_hero=True) ] + [brain.create_hero(hero, heroes_list[0]) for hero in heroes_list[1:]]
 
 team = Team(
     players=players,
