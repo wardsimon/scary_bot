@@ -166,11 +166,6 @@ def obj_poles(groups: dict, known: dict):
             tot.extend([Pole(Vec(x, y), s, r) for x, y in zip(groups[t].x, groups[t].y)])
     return tuple(tot)
 
-
-def pickup_poles(pickups):
-    known = {'chicken': (10, 100), 'treasure': (100, 130)}
-    return obj_poles(pickups, known)
-
 def healer_poles(t, players):
     if 'isolde' not in players:
         return ()
@@ -194,7 +189,7 @@ def health_need(players: dict[str, PlayerInfo]):
 
 def toward_poles(t, players, pickups):
     health_scale = health_need(players)
-    known = {'chicken': (10 * health_scale, 100), 'treasure': (100, 130)}
+    known = {'chicken': (10 * health_scale, 100), 'treasure': (130, 100)}
     pickup_poles = obj_poles(pickups, known)
     player_poles = healer_poles(t, players) if health_scale else ()
     return player_poles + pickup_poles
