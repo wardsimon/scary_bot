@@ -4,6 +4,7 @@ import numpy as np
 from tilthenightends import Levelup, LevelupOptions, Vector, Team, Towards
 from dataclasses import dataclass
 
+from tilthenightends.monsters import MonsterInfo
 
 RNG = np.random.default_rng(seed=12)
 
@@ -64,7 +65,15 @@ class Potential:
         avoid = sum(rep.direction(pos) for rep in self.repulse) if len(self.repulse) else Vec(0, 0)
         print(f'{len(self.attract)=} {goal=} {len(self.repulse)=} {avoid=}')
         total = goal - avoid
+        norm = total.length()
+        if norm:
+            total *= 1/norm
         return Vector(total.x, total.y)
+
+
+def monster_pole(info: MonsterInfo):
+    strength = info.attacks * info.speeds
+    return tuple(Pole(Vec(x, y), s, r) for x, y, s, r in zip(info.x, info.y, strength, info.radii))
 
 
 def obj_poles(groups: dict, known: dict):
@@ -76,11 +85,13 @@ def obj_poles(groups: dict, known: dict):
 
 
 def monster_poles(monsters):
-    known = {'bat': (1, 50)}
-    return obj_poles(monsters, known)
+    tot = []
+    for named, values in monsters.items():
+        tot += list(monster_pole(values))
+    return tuple(tot)
 
 def pickup_poles(pickups):
-    known = {'chicken': (10, 100), 'box': (100, 130)}
+    known = {'chicken': (10, 100), 'treasure': (100, 130)}
     return obj_poles(pickups, known)
 
 
