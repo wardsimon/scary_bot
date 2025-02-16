@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from scary_bot.players import BasePlayer
+    from scary_bot.players import Player
 from tilthenightends import Vector, Towards
 
 class MovementLogic:
-    def __init__(self, player: 'BasePlayer'):
+    def __init__(self, player: 'Player'):
         self.vector = Vector(1, 1)
         self.position = Vector(0, 0)
         self.player = player
@@ -28,7 +28,7 @@ class MovementLogic:
 
 
 class LeaderLogic(MovementLogic):
-    def __init__(self, player: 'BasePlayer'):
+    def __init__(self, player: 'Player'):
         super().__init__(player)
         self.next_turn = 5.0
         self.initial_tick = 10
@@ -48,7 +48,7 @@ class LeaderLogic(MovementLogic):
 
 
 class FollowerLogic(MovementLogic):
-    def __init__(self, player: 'BasePlayer', leader: str):
+    def __init__(self, player: 'Player', leader: str):
         super().__init__(player)
         self.leader = leader
 
@@ -67,7 +67,12 @@ class FollowerLogic(MovementLogic):
             x_offset = radius * np.cos(angle)
             y_offset = radius * np.sin(angle)
             return Towards(leader.x + x_offset, leader.y + y_offset)
-
+        # The leader is dead. I'm the new leader.
+        self.player.is_leader = True
+        self.player.brain.leader.is_leader = False
+        self.player.brain.followers[self.player.brain.leader.hero] = self.player.brain.leader
+        self.player.brain.leader = self.player
+        return self.run(t, dt, monsters, players, pickups)
 
 @dataclass
 class Vec:
