@@ -37,7 +37,7 @@ class LeaderLogic(MovementLogic):
     def run(self, t, dt, monsters, players, pickups) -> Vector | Towards | None:
         super().run(t, dt, monsters, players, pickups)
         if t > self.next_turn:
-            pot = Potential(pickup_poles(pickups), monster_poles(monsters))
+            pot = Potential(toward_poles(t, players, pickups), monster_poles(monsters))
             v = pot.direction(Vec(self.position.x, self.position.y))
             if v == Vector(0, 0):
                 self.next_turn += 3
@@ -78,6 +78,11 @@ class FollowerLogic(MovementLogic):
             value.follower.leader = self.player.hero
         self.player.brain.leader = self.player
         return self.run(t, dt, monsters, players, pickups)
+from tilthenightends import Levelup, LevelupOptions, Vector, Team, Towards
+from tilthenightends.monsters import MonsterInfo
+
+RNG = np.random.default_rng(seed=12)
+
 
 @dataclass
 class Vec:
@@ -133,10 +138,24 @@ class Potential:
         goal = self.attract[0].direction(pos) if len(self.attract) else Vec(0, 0)
         # but try to avoid all known repulsive poles
         avoid = sum(rep.direction(pos) for rep in self.repulse) if len(self.repulse) else Vec(0, 0)
-        print(f'{len(self.attract)=} {goal=} {len(self.repulse)=} {avoid=}')
         total = goal - avoid
+        norm = total.length()
+        if norm:
+            total *= 1/norm
         return Vector(total.x, total.y)
 
+
+def monster_pole(info: MonsterInfo):
+    # Avoid strong-fast monsters:
+    strength = info.attacks * info.speeds
+    return tuple(Pole(Vec(x, y), s, r) for x, y, s, r in zip(info.x, info.y, strength, info.radii))
+
+
+def monster_poles(monsters):
+    tot = []
+    for named, values in monsters.items():
+        tot += list(monster_pole(values))
+    return tuple(tot)
 
 def obj_poles(groups: dict, known: dict):
     tot = []
@@ -146,11 +165,24 @@ def obj_poles(groups: dict, known: dict):
     return tuple(tot)
 
 
-def monster_poles(monsters):
-    known = {'bat': (1, 50)}
-    return obj_poles(monsters, known)
-
-
 def pickup_poles(pickups):
-    known = {'chicken': (10, 100), 'box': (100, 130)}
+    #TODO go toward chicken if we need health
+    known = {'chicken': (10, 100), 'treasure': (100, 130)}
     return obj_poles(pickups, known)
+
+def healer_poles(t, players):
+    # TODO go toward healer's water
+    if 'isolde' not in players:
+        return ()
+    water = players['isolde'].weapon.projectiles
+    xs, ys = water['positions']
+    ss = (water['tends'] - t) * water['healths']
+    rs = water['radii']
+    return tuple(Pole(Vec(x, y), s, r) for x, y, s, r in zip(xs, ys, ss, rs))
+
+
+def toward_poles(t, players, pickups):
+    known = {'chicken': (10, 100), 'treasure': (100, 130)}
+    pickup_poles = obj_poles(pickups, known)
+    player_poles = healer_poles(t, players)
+    return player_poles + pickup_poles

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from dataclasses import dataclass
 import numpy as np
-
 from scary_bot.players import Player
 from tilthenightends import Levelup, LevelupOptions, Team
 
