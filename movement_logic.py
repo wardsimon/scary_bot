@@ -70,6 +70,7 @@ class FollowerLogic(MovementLogic):
             return Towards(leader.x + x_offset, leader.y + y_offset)
         # The leader is dead. I'm the new leader.
         self.player.is_leader = True
+        self.player.follower.leader = None
         self.player.brain.leader.is_leader = False
         self.player.brain.followers[self.player.brain.leader.hero] = self.player.brain.leader
         self.player.brain.followers.pop(self.player.hero)

@@ -29,11 +29,11 @@ class Brain:
 
 brain = Brain()
 players = []
-players.append(brain.create_hero("alaric", None, is_primary_hero=True))
-players.append(brain.create_hero("kaelen", "alaric"))
-players.append(brain.create_hero("garron", "alaric"))
-players.append(brain.create_hero("isolde", "alaric"))
-players.append(brain.create_hero("lyra", "alaric"))
+players.append(brain.create_hero("isolde", None, is_primary_hero=True))
+players.append(brain.create_hero("theron", "isolde"))
+players.append(brain.create_hero("evelyn", "isolde"))
+players.append(brain.create_hero("selene", "isolde"))
+players.append(brain.create_hero("seraphina", "isolde"))
 
 team = Team(
     players=players,
