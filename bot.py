@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from dataclasses import dataclass
 import numpy as np
 from tilthenightends import Levelup, LevelupOptions, Vector, Team, Towards
-from dataclasses import dataclass
-
 from tilthenightends.monsters import MonsterInfo
 
 RNG = np.random.default_rng(seed=12)
