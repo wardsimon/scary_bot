@@ -122,11 +122,18 @@ class Pole:
     def __post_init__(self):
         self.scale = 1.0 / self.sigma / self.sigma
 
+    # def direction(self, pos: Vec):
+    #     v = self.pos - pos
+    #     r = v.length()
+    #     magnitude = self.strength * np.exp(-r * r * self.scale)
+    #     return (magnitude / r) * v
+
     def direction(self, pos: Vec):
         v = self.pos - pos
         r = v.length()
-        magnitude = self.strength * np.exp(-r * r * self.scale)
-        return (magnitude / r) * v
+        if r < 1:
+            return Vec(0, 0)
+        return self.strength / r * v
 
 
 @dataclass
@@ -137,9 +144,11 @@ class Potential:
     def direction(self, pos: Vec) -> Vector:
         """Select a direction from (x,y) that avoids repulsive poles"""
         # To start, just go for the first-known attractor
-        goal = self.attract[0].direction(pos) if len(self.attract) else Vec(0, 0)
+        # goal = self.attract[0].direction(pos) if len(self.attract) else Vec(0, 0)
+        goal = sum(atr.direction(pos) for atr in self.attract) if len(self.attract) else Vec(0, 0)
         # but try to avoid all known repulsive poles
         avoid = sum(rep.direction(pos) for rep in self.repulse) if len(self.repulse) else Vec(0, 0)
+        print(f'{len(self.attract)} {goal=} {len(self.repulse)} {avoid=}')
         total = goal - avoid
         norm = total.length()
         if norm:
